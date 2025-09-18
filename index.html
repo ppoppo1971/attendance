@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출결번호</title>
+    <title>출결번호0415</title>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -323,38 +323,26 @@
     </div>
 
     <script>
-        // Firebase 설정 (서버에서 가져오기)
-        let firebaseConfig = null;
-        let db = null;
+        // Firebase 설정
+        const firebaseConfig = {
+            // 여기에 실제 Firebase 설정을 입력하세요
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
 
-        // 서버에서 Firebase 설정 가져오기
-        async function loadFirebaseConfig() {
-            try {
-                const response = await fetch('/api/firebase/config');
-                firebaseConfig = await response.json();
-                
-                if (firebaseConfig.error) {
-                    console.error('Firebase 설정 오류:', firebaseConfig.error);
-                    return false;
-                }
-                
-                // Firebase 초기화
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                console.log('Firebase 초기화 완료');
-                return true;
-            } catch (error) {
-                console.error('Firebase 설정 로드 오류:', error);
-                return false;
-            }
-        }
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         // 전역 변수
         let inputNumbers = [];
         let currentIndex = 0;
         let isProcessing = false;
         let studentStatus = {}; // 학생별 입실/퇴실 상태 저장
-        let studentsData = {}; // 출결번호 -> 학생 정보 매핑
 
         // DOM 요소
         const boxes = ['box1', 'box2', 'box3', 'box4'].map(id => document.getElementById(id));
@@ -394,7 +382,6 @@
             }
         }
 
-
         // 확인 버튼
         async function submitInput() {
             if (isProcessing) return;
@@ -425,101 +412,89 @@
             inputDisplay.classList.remove('hidden');
         }
 
-        // Firebase에서 학생 데이터 로드
-        async function loadStudentsData() {
+        // Firebase에서 학생 정보 조회
+        async function findStudentByAttendanceNumber(attendanceNumber) {
             try {
-                const snapshot = await db.collection('students').get();
-                studentsData = {};
+                const studentsRef = db.collection('students');
+                const querySnapshot = await studentsRef.where('attendance_number', '==', attendanceNumber).get();
                 
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.attendance_number) {
-                        studentsData[data.attendance_number] = {
-                            student_id: doc.id,
-                            name: data.name,
-                            attendance_number: data.attendance_number
-                        };
-                    }
-                });
+                if (querySnapshot.empty) {
+                    return null;
+                }
                 
-                console.log('학생 데이터 로드 완료:', studentsData);
+                const doc = querySnapshot.docs[0];
+                return {
+                    id: doc.id,
+                    ...doc.data()
+                };
             } catch (error) {
-                console.error('학생 데이터 로드 오류:', error);
+                console.error('학생 조회 오류:', error);
+                return null;
             }
         }
 
-        // 출석 체크 함수 (Firebase 실시간 연동)
+        // 출석 체크 함수 (Firebase 연동)
         async function checkAttendance(attendanceNumber) {
             isProcessing = true;
             showStatus('처리 중...');
             
             try {
-                // 학생 정보 확인
-                const student = studentsData[attendanceNumber];
+                // Firebase에서 학생 정보 조회
+                const student = await findStudentByAttendanceNumber(attendanceNumber);
+                
                 if (!student) {
                     showStatus('등록되지 않은 출결번호입니다', 'error');
                     return;
                 }
-
-                // 현재 날짜 (YYYY-MM-DD 형식)
-                const today = new Date().toISOString().split('T')[0];
+                
+                // 학생별 상태 확인 (처음이면 입실, 아니면 퇴실)
+                const currentStatus = studentStatus[attendanceNumber] || 'out';
+                const isCheckIn = currentStatus === 'out';
+                
+                // 현재 시간 가져오기
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('ko-KR', { 
                     hour: '2-digit', 
                     minute: '2-digit', 
                     second: '2-digit' 
                 });
-
-                // 오늘 출석 기록 확인
-                const attendanceRef = db.collection('attendance')
-                    .where('student_id', '==', student.student_id)
-                    .where('date', '==', today)
-                    .limit(1);
                 
-                const snapshot = await attendanceRef.get();
+                // Firebase에 출석 기록 저장
+                const attendanceRef = db.collection('attendance').doc();
+                await attendanceRef.set({
+                    student_id: student.id,
+                    attendance_number: attendanceNumber,
+                    student_name: student.name,
+                    action: isCheckIn ? '입실' : '퇴실',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    time_string: timeString,
+                    date: now.toISOString().split('T')[0]
+                });
                 
-                let isCheckIn = true; // 기본값은 입실
+                // 상태 업데이트
+                studentStatus[attendanceNumber] = isCheckIn ? 'in' : 'out';
                 
-                if (!snapshot.empty) {
-                    const attendanceDoc = snapshot.docs[0];
-                    const attendanceData = attendanceDoc.data();
-                    
-                    // 입실 시간이 있으면 퇴실, 없으면 입실
-                    isCheckIn = !attendanceData.check_in_time;
-                }
-
-                // 출석 데이터 업데이트
-                const attendanceData = {
-                    student_id: student.student_id,
-                    date: today,
-                    status: '출석',
-                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
-                };
-
-                if (isCheckIn) {
-                    // 입실
-                    attendanceData.check_in_time = timeString;
-                    showStatus(`${student.name}님 입실 완료 <small>${timeString}</small>`, 'completed');
-                } else {
-                    // 퇴실
-                    attendanceData.check_out_time = timeString;
-                    showStatus(`${student.name}님 퇴실 완료 <small>${timeString}</small>`, 'completed');
-                }
-
-                // Firebase에 저장 (upsert 방식)
-                if (snapshot.empty) {
-                    // 새 문서 생성
-                    await db.collection('attendance').add(attendanceData);
-                } else {
-                    // 기존 문서 업데이트
-                    const docId = snapshot.docs[0].id;
-                    await db.collection('attendance').doc(docId).update(attendanceData);
-                }
-
+                // 결과 메시지 생성 (한 줄로)
+                const action = isCheckIn ? '입실' : '퇴실';
+                const message = `${student.name}님 ${action} 완료 <small>${timeString}</small>`;
+                showStatus(message, 'completed');
+                
                 // 입력 사각형들 숨기기
                 inputDisplay.classList.add('hidden');
                 
-                console.log('출석 체크 성공:', attendanceData);
+                console.log('출석 체크 성공:', { student, action, timeString });
+                
+                // 출석관리 화면에 실시간 업데이트 알림 (선택사항)
+                if (typeof window.parent !== 'undefined' && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'attendance_update',
+                        student_id: student.id,
+                        attendance_number: attendanceNumber,
+                        student_name: student.name,
+                        action: action,
+                        time: timeString
+                    }, '*');
+                }
                 
             } catch (error) {
                 showStatus('오류가 발생했습니다', 'error');
@@ -549,15 +524,6 @@
 
         // 초기화
         updateBoxes();
-        
-        // Firebase 설정 로드 후 학생 데이터 로드
-        loadFirebaseConfig().then(success => {
-            if (success) {
-                loadStudentsData(); // 학생 데이터 로드
-            } else {
-                showStatus('Firebase 연결에 실패했습니다', 'error');
-            }
-        });
     </script>
 </body>
 </html>
