@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출결번호0415</title>
+    <title>출결번호0423</title>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -323,20 +323,29 @@
     </div>
 
     <script>
-        // Firebase 설정
+        // Firebase 설정 - 실제 값으로 교체하세요!
         const firebaseConfig = {
-            // 여기에 실제 Firebase 설정을 입력하세요
-            apiKey: "your-api-key",
+            apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             authDomain: "your-project.firebaseapp.com",
             projectId: "your-project-id",
             storageBucket: "your-project.appspot.com",
             messagingSenderId: "123456789",
-            appId: "your-app-id"
+            appId: "1:123456789:web:abcdefghijklmnop"
         };
 
-        // Firebase 초기화
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        // Firebase 초기화 및 오류 처리
+        let db = null;
+        let firebaseInitialized = false;
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            firebaseInitialized = true;
+            console.log('Firebase 초기화 성공');
+        } catch (error) {
+            console.error('Firebase 초기화 실패:', error);
+            showStatus('Firebase 연결 오류', 'error');
+        }
 
         // 전역 변수
         let inputNumbers = [];
@@ -414,19 +423,27 @@
 
         // Firebase에서 학생 정보 조회
         async function findStudentByAttendanceNumber(attendanceNumber) {
+            if (!firebaseInitialized || !db) {
+                console.error('Firebase가 초기화되지 않았습니다.');
+                return null;
+            }
+
             try {
                 const studentsRef = db.collection('students');
                 const querySnapshot = await studentsRef.where('attendance_number', '==', attendanceNumber).get();
                 
                 if (querySnapshot.empty) {
+                    console.log('등록되지 않은 출결번호:', attendanceNumber);
                     return null;
                 }
                 
                 const doc = querySnapshot.docs[0];
-                return {
+                const studentData = {
                     id: doc.id,
                     ...doc.data()
                 };
+                console.log('학생 정보 조회 성공:', studentData);
+                return studentData;
             } catch (error) {
                 console.error('학생 조회 오류:', error);
                 return null;
@@ -439,6 +456,12 @@
             showStatus('처리 중...');
             
             try {
+                // Firebase 연결 확인
+                if (!firebaseInitialized || !db) {
+                    showStatus('Firebase 연결 오류', 'error');
+                    return;
+                }
+
                 // Firebase에서 학생 정보 조회
                 const student = await findStudentByAttendanceNumber(attendanceNumber);
                 
@@ -497,8 +520,8 @@
                 }
                 
             } catch (error) {
-                showStatus('오류가 발생했습니다', 'error');
                 console.error('출석 체크 오류:', error);
+                showStatus('오류가 발생했습니다', 'error');
             } finally {
                 isProcessing = false;
             }
@@ -524,6 +547,13 @@
 
         // 초기화
         updateBoxes();
+        
+        // Firebase 연결 상태 확인
+        if (firebaseInitialized) {
+            showStatus('시스템 준비 완료');
+        } else {
+            showStatus('Firebase 연결 오류', 'error');
+        }
     </script>
 </body>
 </html>
