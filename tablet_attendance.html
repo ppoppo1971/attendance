@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출결번호</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #000000;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 80px);
+        }
+
+        .left-panel {
+            flex: 1;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .right-panel {
+            flex: 1;
+            background: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .input-display {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .input-box {
+            width: 80px;
+            height: 80px;
+            border: 3px solid #444;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #fff;
+            background: #222;
+            transition: all 0.2s ease;
+        }
+
+        .input-box.active {
+            border-color: #007bff;
+            background: #003366;
+        }
+
+        .input-box.filled {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .status {
+            font-size: 1.5rem;
+            color: #ccc;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .status small {
+            font-size: 1rem;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .status.completed {
+            font-size: 3rem;
+            color: #28a745;
+            min-height: 200px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status.completed small {
+            font-size: 2rem;
+            color: #fff;
+            margin-top: 20px;
+            white-space: nowrap;
+        }
+
+        .input-display.hidden {
+            display: none;
+        }
+
+        .status.success {
+            color: #28a745;
+        }
+
+        .status.error {
+            color: #dc3545;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 300px;
+            width: 100%;
+        }
+
+        .key {
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 10px;
+            background: #333;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .key:hover {
+            background: #555;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .key:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .key.clear {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .key.enter {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .key.clear:hover {
+            background: #e0a800;
+        }
+
+        .key.enter:hover {
+            background: #e0a800;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .input-box {
+                width: 70px;
+                height: 70px;
+                font-size: 2.2rem;
+            }
+            
+            .key {
+                width: 70px;
+                height: 70px;
+                font-size: 1.8rem;
+            }
+            
+            .keypad {
+                max-width: 280px;
+            }
+            
+            .status.completed {
+                font-size: 2.5rem;
+            }
+            
+            .status.completed small {
+                font-size: 1.8rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .left-panel {
+                padding: 20px;
+                min-height: 50vh;
+            }
+            
+            .right-panel {
+                min-height: 50vh;
+            }
+            
+            .input-box {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+            
+            .key {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            .keypad {
+                max-width: 240px;
+            }
+            
+            .status.completed {
+                font-size: 2rem;
+                min-height: 150px;
+            }
+            
+            .status.completed small {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                font-size: 1.5rem;
+                padding: 15px;
+            }
+            
+            .input-box {
+                width: 50px;
+                height: 50px;
+                font-size: 1.8rem;
+            }
+            
+            .key {
+                width: 50px;
+                height: 50px;
+                font-size: 1.3rem;
+            }
+            
+            .keypad {
+                max-width: 200px;
+                gap: 10px;
+            }
+            
+            .status.completed {
+                font-size: 1.8rem;
+                min-height: 120px;
+            }
+            
+            .status.completed small {
+                font-size: 1.3rem;
+            }
+            
+            .input-display {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">출결번호</div>
+    
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="input-display">
+                <div class="input-box" id="box1"></div>
+                <div class="input-box" id="box2"></div>
+                <div class="input-box" id="box3"></div>
+                <div class="input-box" id="box4"></div>
+            </div>
+            <div class="status" id="status">출결번호를 입력하세요</div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="keypad">
+                <button class="key" onclick="inputNumber('1')">1</button>
+                <button class="key" onclick="inputNumber('2')">2</button>
+                <button class="key" onclick="inputNumber('3')">3</button>
+                <button class="key" onclick="inputNumber('4')">4</button>
+                <button class="key" onclick="inputNumber('5')">5</button>
+                <button class="key" onclick="inputNumber('6')">6</button>
+                <button class="key" onclick="inputNumber('7')">7</button>
+                <button class="key" onclick="inputNumber('8')">8</button>
+                <button class="key" onclick="inputNumber('9')">9</button>
+                <button class="key clear" onclick="clearInput()">←</button>
+                <button class="key" onclick="inputNumber('0')">0</button>
+                <button class="key enter" onclick="resetToInitial()">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 설정 (서버에서 가져오기)
+        let firebaseConfig = null;
+        let db = null;
+
+        // 서버에서 Firebase 설정 가져오기
+        async function loadFirebaseConfig() {
+            try {
+                const response = await fetch('/api/firebase/config');
+                firebaseConfig = await response.json();
+                
+                if (firebaseConfig.error) {
+                    console.error('Firebase 설정 오류:', firebaseConfig.error);
+                    return false;
+                }
+                
+                // Firebase 초기화
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                console.log('Firebase 초기화 완료');
+                return true;
+            } catch (error) {
+                console.error('Firebase 설정 로드 오류:', error);
+                return false;
+            }
+        }
+
+        // 전역 변수
+        let inputNumbers = [];
+        let currentIndex = 0;
+        let isProcessing = false;
+        let studentStatus = {}; // 학생별 입실/퇴실 상태 저장
+        let studentsData = {}; // 출결번호 -> 학생 정보 매핑
+
+        // DOM 요소
+        const boxes = ['box1', 'box2', 'box3', 'box4'].map(id => document.getElementById(id));
+        const statusDiv = document.getElementById('status');
+        const inputDisplay = document.querySelector('.input-display');
+
+        // 상태 표시 함수
+        function showStatus(message, type = '') {
+            statusDiv.innerHTML = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        // 입력 박스 업데이트
+        function updateBoxes() {
+            boxes.forEach((box, index) => {
+                box.textContent = inputNumbers[index] || '';
+                box.className = 'input-box';
+                
+                if (index < inputNumbers.length) {
+                    box.classList.add('filled');
+                } else if (index === inputNumbers.length) {
+                    box.classList.add('active');
+                }
+            });
+        }
+
+        // 숫자 입력
+        function inputNumber(num) {
+            if (isProcessing || inputNumbers.length >= 4) return;
+            
+            inputNumbers.push(num);
+            updateBoxes();
+            
+            // 4자리 모두 입력되면 자동 확인
+            if (inputNumbers.length === 4) {
+                setTimeout(() => submitInput(), 500);
+            }
+        }
+
+
+        // 확인 버튼
+        async function submitInput() {
+            if (isProcessing) return;
+            
+            // 입력이 있으면 출석 체크
+            if (inputNumbers.length > 0) {
+                const attendanceNumber = inputNumbers.join('');
+                await checkAttendance(attendanceNumber);
+            }
+        }
+
+        // 초기화 버튼 (확인 버튼과 분리)
+        function resetToInitial() {
+            if (isProcessing) return;
+            clearInput();
+        }
+
+        // 입력 지우기 (사각형들 다시 보이게)
+        function clearInput() {
+            if (isProcessing) return;
+            
+            inputNumbers = [];
+            currentIndex = 0;
+            updateBoxes();
+            showStatus('출결번호를 입력하세요');
+            
+            // 입력 사각형들 다시 보이게
+            inputDisplay.classList.remove('hidden');
+        }
+
+        // Firebase에서 학생 데이터 로드
+        async function loadStudentsData() {
+            try {
+                const snapshot = await db.collection('students').get();
+                studentsData = {};
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.attendance_number) {
+                        studentsData[data.attendance_number] = {
+                            student_id: doc.id,
+                            name: data.name,
+                            attendance_number: data.attendance_number
+                        };
+                    }
+                });
+                
+                console.log('학생 데이터 로드 완료:', studentsData);
+            } catch (error) {
+                console.error('학생 데이터 로드 오류:', error);
+            }
+        }
+
+        // 출석 체크 함수 (Firebase 실시간 연동)
+        async function checkAttendance(attendanceNumber) {
+            isProcessing = true;
+            showStatus('처리 중...');
+            
+            try {
+                // 학생 정보 확인
+                const student = studentsData[attendanceNumber];
+                if (!student) {
+                    showStatus('등록되지 않은 출결번호입니다', 'error');
+                    return;
+                }
+
+                // 현재 날짜 (YYYY-MM-DD 형식)
+                const today = new Date().toISOString().split('T')[0];
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('ko-KR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                });
+
+                // 오늘 출석 기록 확인
+                const attendanceRef = db.collection('attendance')
+                    .where('student_id', '==', student.student_id)
+                    .where('date', '==', today)
+                    .limit(1);
+                
+                const snapshot = await attendanceRef.get();
+                
+                let isCheckIn = true; // 기본값은 입실
+                
+                if (!snapshot.empty) {
+                    const attendanceDoc = snapshot.docs[0];
+                    const attendanceData = attendanceDoc.data();
+                    
+                    // 입실 시간이 있으면 퇴실, 없으면 입실
+                    isCheckIn = !attendanceData.check_in_time;
+                }
+
+                // 출석 데이터 업데이트
+                const attendanceData = {
+                    student_id: student.student_id,
+                    date: today,
+                    status: '출석',
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (isCheckIn) {
+                    // 입실
+                    attendanceData.check_in_time = timeString;
+                    showStatus(`${student.name}님 입실 완료 <small>${timeString}</small>`, 'completed');
+                } else {
+                    // 퇴실
+                    attendanceData.check_out_time = timeString;
+                    showStatus(`${student.name}님 퇴실 완료 <small>${timeString}</small>`, 'completed');
+                }
+
+                // Firebase에 저장 (upsert 방식)
+                if (snapshot.empty) {
+                    // 새 문서 생성
+                    await db.collection('attendance').add(attendanceData);
+                } else {
+                    // 기존 문서 업데이트
+                    const docId = snapshot.docs[0].id;
+                    await db.collection('attendance').doc(docId).update(attendanceData);
+                }
+
+                // 입력 사각형들 숨기기
+                inputDisplay.classList.add('hidden');
+                
+                console.log('출석 체크 성공:', attendanceData);
+                
+            } catch (error) {
+                showStatus('오류가 발생했습니다', 'error');
+                console.error('출석 체크 오류:', error);
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        // 키보드 이벤트
+        document.addEventListener('keydown', function(e) {
+            if (isProcessing) return;
+            
+            if (e.key >= '0' && e.key <= '9') {
+                inputNumber(e.key);
+            } else if (e.key === 'Backspace') {
+                if (inputNumbers.length > 0) {
+                    inputNumbers.pop();
+                    updateBoxes();
+                }
+            } else if (e.key === 'Enter') {
+                submitInput();
+            } else if (e.key === 'Escape') {
+                clearInput();
+            }
+        });
+
+        // 초기화
+        updateBoxes();
+        
+        // Firebase 설정 로드 후 학생 데이터 로드
+        loadFirebaseConfig().then(success => {
+            if (success) {
+                loadStudentsData(); // 학생 데이터 로드
+            } else {
+                showStatus('Firebase 연결에 실패했습니다', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
