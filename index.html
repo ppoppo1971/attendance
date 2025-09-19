@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출결번호0423</title>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <title>출결번호1228</title>
+    <!-- Firebase SDK v8 (브라우저 호환) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
         * {
             margin: 0;
@@ -132,6 +132,15 @@
 
         .status.error {
             color: #dc3545;
+            font-size: 2rem;
+            font-weight: bold;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
 
         .keypad {
@@ -154,6 +163,14 @@
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
         }
 
         .key:hover {
@@ -323,35 +340,26 @@
     </div>
 
     <script>
-        // Firebase 설정 - 실제 값으로 교체하세요!
+        // Firebase 설정 (Firebase Console에서 확인한 실제 설정)
         const firebaseConfig = {
-            apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdefghijklmnop"
+            apiKey: "AIzaSyCBZsadJ_jj7Tk6DACVpT0JKBcY7XLDHX0",
+            authDomain: "attendance250918.firebaseapp.com",
+            projectId: "attendance250918",
+            storageBucket: "attendance250918.firebasestorage.app",
+            messagingSenderId: "961624798311",
+            appId: "1:961624798311:web:a486b6521841e3084f50c2",
+            measurementId: "G-7YPM0EVRCC"
         };
 
-        // Firebase 초기화 및 오류 처리
-        let db = null;
-        let firebaseInitialized = false;
-
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            firebaseInitialized = true;
-            console.log('Firebase 초기화 성공');
-        } catch (error) {
-            console.error('Firebase 초기화 실패:', error);
-            showStatus('Firebase 연결 오류', 'error');
-        }
-
-        // 전역 변수
+        // 전역 변수 (Firebase 초기화 전에 선언)
         let inputNumbers = [];
         let currentIndex = 0;
         let isProcessing = false;
         let studentStatus = {}; // 학생별 입실/퇴실 상태 저장
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         // DOM 요소
         const boxes = ['box1', 'box2', 'box3', 'box4'].map(id => document.getElementById(id));
@@ -363,6 +371,7 @@
             statusDiv.innerHTML = message;
             statusDiv.className = `status ${type}`;
         }
+
 
         // 입력 박스 업데이트
         function updateBoxes() {
@@ -380,16 +389,23 @@
 
         // 숫자 입력
         function inputNumber(num) {
-            if (isProcessing || inputNumbers.length >= 4) return;
+            console.log('inputNumber 호출됨:', num, 'isProcessing:', isProcessing);
+            if (isProcessing || inputNumbers.length >= 4) {
+                console.log('입력 차단됨 - isProcessing:', isProcessing, 'length:', inputNumbers.length);
+                return;
+            }
             
             inputNumbers.push(num);
             updateBoxes();
+            console.log('현재 입력:', inputNumbers);
             
             // 4자리 모두 입력되면 자동 확인
             if (inputNumbers.length === 4) {
+                console.log('4자리 입력 완료, 자동 확인 실행');
                 setTimeout(() => submitInput(), 500);
             }
         }
+
 
         // 확인 버튼
         async function submitInput() {
@@ -405,10 +421,13 @@
         // 초기화 버튼 (확인 버튼과 분리)
         function resetToInitial() {
             if (isProcessing) return;
+            
+            // 입력 사각형들 다시 보이게
+            inputDisplay.classList.remove('hidden');
             clearInput();
         }
 
-        // 입력 지우기 (사각형들 다시 보이게)
+        // 입력 지우기
         function clearInput() {
             if (isProcessing) return;
             
@@ -417,37 +436,7 @@
             updateBoxes();
             showStatus('출결번호를 입력하세요');
             
-            // 입력 사각형들 다시 보이게
-            inputDisplay.classList.remove('hidden');
-        }
-
-        // Firebase에서 학생 정보 조회
-        async function findStudentByAttendanceNumber(attendanceNumber) {
-            if (!firebaseInitialized || !db) {
-                console.error('Firebase가 초기화되지 않았습니다.');
-                return null;
-            }
-
-            try {
-                const studentsRef = db.collection('students');
-                const querySnapshot = await studentsRef.where('attendance_number', '==', attendanceNumber).get();
-                
-                if (querySnapshot.empty) {
-                    console.log('등록되지 않은 출결번호:', attendanceNumber);
-                    return null;
-                }
-                
-                const doc = querySnapshot.docs[0];
-                const studentData = {
-                    id: doc.id,
-                    ...doc.data()
-                };
-                console.log('학생 정보 조회 성공:', studentData);
-                return studentData;
-            } catch (error) {
-                console.error('학생 조회 오류:', error);
-                return null;
-            }
+            console.log('입력 초기화 완료');
         }
 
         // 출석 체크 함수 (Firebase 연동)
@@ -455,26 +444,43 @@
             isProcessing = true;
             showStatus('처리 중...');
             
+            // 네트워크 연결 상태 확인
+            if (!navigator.onLine) {
+                showStatus('인터넷 연결을 확인하세요', 'error');
+                inputDisplay.classList.remove('hidden');
+                isProcessing = false;
+                return;
+            }
+            
             try {
-                // Firebase 연결 확인
-                if (!firebaseInitialized || !db) {
-                    showStatus('Firebase 연결 오류', 'error');
-                    return;
-                }
-
-                // Firebase에서 학생 정보 조회
-                const student = await findStudentByAttendanceNumber(attendanceNumber);
+                // 1. Firebase에서 학생 정보 조회
+                const studentQuery = await db.collection('students')
+                    .where('attendance_number', '==', attendanceNumber)
+                    .get();
                 
-                if (!student) {
+                if (studentQuery.empty) {
                     showStatus('등록되지 않은 출결번호입니다', 'error');
+                    inputDisplay.classList.remove('hidden');
+                    isProcessing = false;
                     return;
                 }
                 
-                // 학생별 상태 확인 (처음이면 입실, 아니면 퇴실)
+                const studentDoc = studentQuery.docs[0];
+                const studentData = studentDoc.data();
+                const studentName = studentData.name;
+                
+                // 2. 학생별 상태 확인 (처음이면 입실, 아니면 퇴실)
                 const currentStatus = studentStatus[attendanceNumber] || 'out';
                 const isCheckIn = currentStatus === 'out';
                 
-                // 현재 시간 가져오기
+                console.log('학생 상태 확인:', {
+                    attendanceNumber,
+                    studentName,
+                    currentStatus,
+                    nextAction: isCheckIn ? '입실' : '퇴실'
+                });
+                
+                // 3. 현재 시간 가져오기
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('ko-KR', { 
                     hour: '2-digit', 
@@ -482,46 +488,49 @@
                     second: '2-digit' 
                 });
                 
-                // Firebase에 출석 기록 저장
-                const attendanceRef = db.collection('attendance').doc();
-                await attendanceRef.set({
-                    student_id: student.id,
+                // 4. Firebase에 출석 데이터 저장
+                const docRef = await db.collection('attendance').add({
                     attendance_number: attendanceNumber,
-                    student_name: student.name,
-                    action: isCheckIn ? '입실' : '퇴실',
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    time_string: timeString,
-                    date: now.toISOString().split('T')[0]
+                    student_name: studentName,
+                    check_type: isCheckIn ? 'check_in' : 'check_out',
+                    timestamp: firebase.firestore.Timestamp.fromDate(now),
+                    date: now.toISOString().split('T')[0],
+                    created_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
-                // 상태 업데이트
+                console.log('Firebase 저장 성공:', docRef.id);
+                
+                // 5. 상태 업데이트 (저장 성공 시에만)
                 studentStatus[attendanceNumber] = isCheckIn ? 'in' : 'out';
                 
-                // 결과 메시지 생성 (한 줄로)
+                // 6. 성공 메시지 표시
                 const action = isCheckIn ? '입실' : '퇴실';
-                const message = `${student.name}님 ${action} 완료 <small>${timeString}</small>`;
+                const message = `${studentName}님 ${action} 완료 <small>${timeString}</small>`;
                 showStatus(message, 'completed');
                 
-                // 입력 사각형들 숨기기
+                // 7. 저장 성공 시에만 입력 사각형들 숨기기
                 inputDisplay.classList.add('hidden');
                 
-                console.log('출석 체크 성공:', { student, action, timeString });
-                
-                // 출석관리 화면에 실시간 업데이트 알림 (선택사항)
-                if (typeof window.parent !== 'undefined' && window.parent !== window) {
-                    window.parent.postMessage({
-                        type: 'attendance_update',
-                        student_id: student.id,
-                        attendance_number: attendanceNumber,
-                        student_name: student.name,
-                        action: action,
-                        time: timeString
-                    }, '*');
-                }
+                console.log('Firebase 출석 체크 완료:', { 
+                    attendanceNumber, 
+                    studentName, 
+                    action, 
+                    time: timeString 
+                });
                 
             } catch (error) {
-                console.error('출석 체크 오류:', error);
-                showStatus('오류가 발생했습니다', 'error');
+                console.error('Firebase 출석 체크 오류:', error);
+                
+                // 오류 유형에 따른 메시지 분류
+                if (error.code === 'permission-denied') {
+                    showStatus('권한이 없습니다. 관리자에게 문의하세요', 'error');
+                } else if (error.code === 'unavailable') {
+                    showStatus('서버에 연결할 수 없습니다. 다시 시도하세요', 'error');
+                } else {
+                    showStatus('오류가 발생했습니다. 다시 입력하세요', 'error');
+                }
+                
+                inputDisplay.classList.remove('hidden');
             } finally {
                 isProcessing = false;
             }
@@ -545,15 +554,27 @@
             }
         });
 
+        // 터치 이벤트 개선
+        document.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // 키패드 버튼에 터치 이벤트 추가
+        document.querySelectorAll('.key').forEach(key => {
+            key.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.click();
+            }, { passive: false });
+            
+            key.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }, { passive: false });
+        });
+
         // 초기화
         updateBoxes();
-        
-        // Firebase 연결 상태 확인
-        if (firebaseInitialized) {
-            showStatus('시스템 준비 완료');
-        } else {
-            showStatus('Firebase 연결 오류', 'error');
-        }
     </script>
 </body>
 </html>
