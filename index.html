@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#333333">
     <link rel="manifest" href="data:application/json;charset=utf-8;base64,eyJuYW1lIjoi7Lac6rKw67KI7Zi4Iiwic2hvcnRfbmFtZSI6Iuy2nOqysCIsInN0YXJ0X3VybCI6Ii90YWJsZXRfYXR0ZW5kYW5jZS5odG1sIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzAwMDAwMCIsInRoZW1lX2NvbG9yIjoiIzMzMzMzMyIsIm9yaWVudGF0aW9uIjoiYW55IiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjRiV3h1Y3owaWFIUjBjRG92TDNkM2R5NTNNeTV2Y21jdk1qQXdNQzl6ZG1jaUlIZHBaSFJvUFNJeE1qZ2lJR2hsYVdkb2REMGlNVEk0SWo0OGNtVmpkQ0IzYVdSMGFEMGlNVEk0SWlCb1pXbG5hSFE5SWpFeU9DSWdabWxzYkQwaUl6TXpNeUl2UGp3dmMzWm5QZz09Iiwic2l6ZXMiOiIxMjh4MTI4IiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
-    <title>출결번호0116</title>
+    <title>출결번호0124</title>
     <!-- Firebase SDK v8 (브라우저 호환) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -61,7 +61,7 @@
             font-size: 1.2rem;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            display: none; /* 기본 숨김 */
+            display: flex;
             align-items: center;
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
@@ -74,87 +74,31 @@
             -webkit-backdrop-filter: blur(8px);
         }
         
-        /* 데스크탑에서만 표시 */
-        @media (min-width: 1024px) {
-            .fullscreen-btn {
-                display: flex;
-            }
-        }
-        
-        /* PWA 설치 안내 배너 */
-        .install-banner {
+        /* 전체화면 안내 메시지 */
+        .fullscreen-notice {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(102, 126, 234, 0.95);
             color: white;
-            padding: 15px 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
             display: none;
             align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-            z-index: 9999;
-            animation: slideUp 0.3s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        
-        .install-banner-content {
-            flex: 1;
-            margin-right: 15px;
-        }
-        
-        .install-banner-title {
-            font-size: 1rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .install-banner-text {
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-        
-        .install-banner-buttons {
-            display: flex;
             gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            animation: fadeInOut 3s ease-in-out;
+            pointer-events: none;
         }
         
-        .install-btn {
-            background: white;
-            color: #667eea;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-            white-space: nowrap;
-        }
-        
-        .install-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .close-banner-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-        
-        .close-banner-btn:active {
-            background: rgba(255, 255, 255, 0.3);
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
         }
         
         .fullscreen-btn:hover {
@@ -510,16 +454,9 @@
     </style>
 </head>
 <body>
-    <!-- PWA 설치 안내 배너 -->
-    <div class="install-banner" id="installBanner">
-        <div class="install-banner-content">
-            <div class="install-banner-title">📱 전체화면으로 사용하기</div>
-            <div class="install-banner-text">홈 화면에 추가하면 주소창 없이 사용할 수 있습니다</div>
-        </div>
-        <div class="install-banner-buttons">
-            <button class="install-btn" id="installBtn">설치하기</button>
-            <button class="close-banner-btn" id="closeBannerBtn">닫기</button>
-        </div>
+    <!-- 전체화면 안내 메시지 -->
+    <div class="fullscreen-notice" id="fullscreenNotice">
+        ⚡ 오른쪽 상단 버튼을 눌러 전체화면으로 전환하세요
     </div>
     
     <div class="header">
@@ -795,59 +732,51 @@
             }, { passive: false });
         });
 
-        // 전체화면 토글 함수 (모바일 최적화)
+        // 전체화면 토글 함수
         function toggleFullscreen() {
             const elem = document.documentElement;
-            const body = document.body;
             
-            // 모바일 브라우저 감지
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            
-            if (isMobile) {
-                // 모바일: 스크롤하여 주소창 숨기기
-                window.scrollTo(0, 1);
-                
-                // 약간의 지연 후 다시 스크롤 (주소창 완전히 숨김)
-                setTimeout(() => {
-                    window.scrollTo(0, 0);
-                    // 화면 상단으로 스크롤하여 주소창 최소화
-                    if (window.innerHeight !== screen.height) {
-                        window.scrollTo(0, 1);
-                    }
-                }, 100);
-                
-                console.log('모바일: 주소창 숨김 시도');
-                return;
-            }
-            
-            // 데스크탑: 전체화면 API 사용
             if (!document.fullscreenElement && 
                 !document.webkitFullscreenElement && 
                 !document.mozFullScreenElement && 
                 !document.msFullscreenElement) {
                 // 전체화면으로 전환
-                if (elem.requestFullscreen) {
-                    elem.requestFullscreen().catch(err => {
-                        console.log('전체화면 오류:', err);
+                const requestFullscreen = elem.requestFullscreen || 
+                                         elem.webkitRequestFullscreen || 
+                                         elem.mozRequestFullScreen || 
+                                         elem.msRequestFullscreen;
+                
+                if (requestFullscreen) {
+                    requestFullscreen.call(elem).then(() => {
+                        console.log('✅ 전체화면 활성화');
+                    }).catch(err => {
+                        console.log('전체화면 오류:', err.message);
+                        // 모바일에서 스크롤로 주소창 숨김 시도
+                        window.scrollTo(0, 1);
                     });
-                } else if (elem.webkitRequestFullscreen) { // Safari
-                    elem.webkitRequestFullscreen();
-                } else if (elem.mozRequestFullScreen) { // Firefox
-                    elem.mozRequestFullScreen();
-                } else if (elem.msRequestFullscreen) { // IE/Edge
-                    elem.msRequestFullscreen();
+                } else {
+                    // Fullscreen API 미지원 시 스크롤로 주소창 숨김
+                    window.scrollTo(0, 1);
                 }
             } else {
                 // 전체화면 해제
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { // Safari
-                    document.webkitExitFullscreen();
-                } else if (document.mozCancelFullScreen) { // Firefox
-                    document.mozCancelFullScreen();
-                } else if (document.msExitFullscreen) { // IE/Edge
-                    document.msExitFullscreen();
+                const exitFullscreen = document.exitFullscreen || 
+                                      document.webkitExitFullscreen || 
+                                      document.mozCancelFullScreen || 
+                                      document.msExitFullscreen;
+                
+                if (exitFullscreen) {
+                    exitFullscreen.call(document);
                 }
+            }
+        }
+        
+        // 자동 전체화면 시도 (첫 사용자 인터랙션 시)
+        function autoFullscreen() {
+            const hasInteracted = sessionStorage.getItem('hasInteracted');
+            if (!hasInteracted) {
+                toggleFullscreen();
+                sessionStorage.setItem('hasInteracted', 'true');
             }
         }
         
@@ -876,73 +805,7 @@
         document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
         document.addEventListener('MSFullscreenChange', updateFullscreenIcon);
         
-        // PWA 설치 관련 변수
-        let deferredPrompt;
-        const installBanner = document.getElementById('installBanner');
-        const installBtn = document.getElementById('installBtn');
-        const closeBannerBtn = document.getElementById('closeBannerBtn');
-        
-        // PWA 설치 가능 이벤트 감지
-        window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('PWA 설치 가능');
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            // 이미 설치되었거나 배너를 닫은 적이 있는지 확인
-            const bannerDismissed = localStorage.getItem('installBannerDismissed');
-            if (!bannerDismissed && !isRunningStandalone()) {
-                installBanner.style.display = 'flex';
-            }
-        });
-        
-        // 설치 버튼 클릭
-        installBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) {
-                // 수동 설치 안내
-                showManualInstallGuide();
-                return;
-            }
-            
-            installBanner.style.display = 'none';
-            deferredPrompt.prompt();
-            
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`사용자 선택: ${outcome}`);
-            
-            deferredPrompt = null;
-        });
-        
-        // 배너 닫기
-        closeBannerBtn.addEventListener('click', () => {
-            installBanner.style.display = 'none';
-            localStorage.setItem('installBannerDismissed', 'true');
-        });
-        
-        // 수동 설치 안내 (자동 프롬프트가 없을 때)
-        function showManualInstallGuide() {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isAndroid = /Android/.test(navigator.userAgent);
-            
-            let message = '';
-            if (isIOS) {
-                message = '📱 전체화면으로 사용하기:\n\n1. 화면 하단의 공유 버튼(↑) 터치\n2. "홈 화면에 추가" 선택\n3. "추가" 버튼 터치';
-            } else if (isAndroid) {
-                message = '📱 전체화면으로 사용하기:\n\n1. 브라우저 메뉴(⋮) 터치\n2. "홈 화면에 추가" 또는 "앱 설치" 선택\n3. "추가" 또는 "설치" 버튼 터치';
-            } else {
-                message = '데스크탑에서는 전체화면 버튼을 사용하세요.';
-            }
-            
-            alert(message);
-        }
-        
-        // Standalone 모드인지 확인
-        function isRunningStandalone() {
-            return (window.matchMedia('(display-mode: standalone)').matches) || 
-                   (window.navigator.standalone) || 
-                   document.referrer.includes('android-app://');
-        }
-        
-        // 모바일에서 주소창 자동 숨김
+        // 페이지 로드 시 초기화
         window.addEventListener('load', function() {
             // iOS Safari 높이 이슈 해결
             const setVH = () => {
@@ -954,26 +817,38 @@
             window.addEventListener('resize', setVH);
             window.addEventListener('orientationchange', setVH);
             
-            // Standalone 모드가 아닌 모바일에서 배너 표시
+            // 모바일에서 스크롤로 주소창 숨김
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            const bannerDismissed = localStorage.getItem('installBannerDismissed');
-            
-            if (isMobile && !isRunningStandalone() && !bannerDismissed && !deferredPrompt) {
-                // beforeinstallprompt가 발생하지 않았을 때 (iOS 등)
+            if (isMobile) {
                 setTimeout(() => {
-                    if (installBanner.style.display !== 'flex') {
-                        installBanner.style.display = 'flex';
-                    }
-                }, 2000); // 2초 후 표시
+                    window.scrollTo(0, 1);
+                }, 100);
             }
             
-            // Standalone 모드 확인 및 로그
-            if (isRunningStandalone()) {
-                console.log('✅ Standalone 모드로 실행 중 (전체화면)');
-            } else {
-                console.log('ℹ️ 브라우저 모드로 실행 중');
+            // 전체화면 안내 메시지 표시 (모바일이 아닐 때만)
+            if (!isMobile) {
+                const fullscreenNotice = document.getElementById('fullscreenNotice');
+                const hasSeenNotice = sessionStorage.getItem('hasSeenFullscreenNotice');
+                
+                if (!hasSeenNotice) {
+                    setTimeout(() => {
+                        fullscreenNotice.style.display = 'flex';
+                        sessionStorage.setItem('hasSeenFullscreenNotice', 'true');
+                        
+                        // 3초 후 자동 숨김
+                        setTimeout(() => {
+                            fullscreenNotice.style.display = 'none';
+                        }, 3000);
+                    }, 1000);
+                }
             }
+            
+            console.log('✅ 출석번호 화면 로드 완료');
         });
+        
+        // 첫 클릭 시 자동 전체화면 시도
+        document.addEventListener('click', autoFullscreen, { once: true });
+        document.addEventListener('touchstart', autoFullscreen, { once: true });
         
         // 초기화
         updateBoxes();
