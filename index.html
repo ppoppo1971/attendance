@@ -2,11 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>출결번호0110</title>
+    <meta name="theme-color" content="#333333">
+    <link rel="manifest" href="data:application/json;charset=utf-8;base64,eyJuYW1lIjoi7Lac6rKw67KI7Zi4Iiwic2hvcnRfbmFtZSI6Iuy2nOqysCIsInN0YXJ0X3VybCI6Ii90YWJsZXRfYXR0ZW5kYW5jZS5odG1sIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzAwMDAwMCIsInRoZW1lX2NvbG9yIjoiIzMzMzMzMyIsIm9yaWVudGF0aW9uIjoiYW55IiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjRiV3h1Y3owaWFIUjBjRG92TDNkM2R5NTNNeTV2Y21jdk1qQXdNQzl6ZG1jaUlIZHBaSFJvUFNJeE1qZ2lJR2hsYVdkb2REMGlNVEk0SWo0OGNtVmpkQ0IzYVdSMGFEMGlNVEk0SWlCb1pXbG5hSFE5SWpFeU9DSWdabWxzYkQwaUl6TXpNeUl2UGp3dmMzWm5QZz09Iiwic2l6ZXMiOiIxMjh4MTI4IiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
+    <title>출결번호0116</title>
     <!-- Firebase SDK v8 (브라우저 호환) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -59,7 +61,7 @@
             font-size: 1.2rem;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
+            display: none; /* 기본 숨김 */
             align-items: center;
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
@@ -70,6 +72,89 @@
             z-index: 1000;
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
+        }
+        
+        /* 데스크탑에서만 표시 */
+        @media (min-width: 1024px) {
+            .fullscreen-btn {
+                display: flex;
+            }
+        }
+        
+        /* PWA 설치 안내 배너 */
+        .install-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .install-banner-content {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .install-banner-title {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .install-banner-text {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        
+        .install-banner-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .install-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            white-space: nowrap;
+        }
+        
+        .install-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .close-banner-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        
+        .close-banner-btn:active {
+            background: rgba(255, 255, 255, 0.3);
         }
         
         .fullscreen-btn:hover {
@@ -425,6 +510,18 @@
     </style>
 </head>
 <body>
+    <!-- PWA 설치 안내 배너 -->
+    <div class="install-banner" id="installBanner">
+        <div class="install-banner-content">
+            <div class="install-banner-title">📱 전체화면으로 사용하기</div>
+            <div class="install-banner-text">홈 화면에 추가하면 주소창 없이 사용할 수 있습니다</div>
+        </div>
+        <div class="install-banner-buttons">
+            <button class="install-btn" id="installBtn">설치하기</button>
+            <button class="close-banner-btn" id="closeBannerBtn">닫기</button>
+        </div>
+    </div>
+    
     <div class="header">
         출결번호
         <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="전체화면" aria-label="전체화면 토글">
@@ -779,6 +876,72 @@
         document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
         document.addEventListener('MSFullscreenChange', updateFullscreenIcon);
         
+        // PWA 설치 관련 변수
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        const installBtn = document.getElementById('installBtn');
+        const closeBannerBtn = document.getElementById('closeBannerBtn');
+        
+        // PWA 설치 가능 이벤트 감지
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA 설치 가능');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // 이미 설치되었거나 배너를 닫은 적이 있는지 확인
+            const bannerDismissed = localStorage.getItem('installBannerDismissed');
+            if (!bannerDismissed && !isRunningStandalone()) {
+                installBanner.style.display = 'flex';
+            }
+        });
+        
+        // 설치 버튼 클릭
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                // 수동 설치 안내
+                showManualInstallGuide();
+                return;
+            }
+            
+            installBanner.style.display = 'none';
+            deferredPrompt.prompt();
+            
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`사용자 선택: ${outcome}`);
+            
+            deferredPrompt = null;
+        });
+        
+        // 배너 닫기
+        closeBannerBtn.addEventListener('click', () => {
+            installBanner.style.display = 'none';
+            localStorage.setItem('installBannerDismissed', 'true');
+        });
+        
+        // 수동 설치 안내 (자동 프롬프트가 없을 때)
+        function showManualInstallGuide() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            
+            let message = '';
+            if (isIOS) {
+                message = '📱 전체화면으로 사용하기:\n\n1. 화면 하단의 공유 버튼(↑) 터치\n2. "홈 화면에 추가" 선택\n3. "추가" 버튼 터치';
+            } else if (isAndroid) {
+                message = '📱 전체화면으로 사용하기:\n\n1. 브라우저 메뉴(⋮) 터치\n2. "홈 화면에 추가" 또는 "앱 설치" 선택\n3. "추가" 또는 "설치" 버튼 터치';
+            } else {
+                message = '데스크탑에서는 전체화면 버튼을 사용하세요.';
+            }
+            
+            alert(message);
+        }
+        
+        // Standalone 모드인지 확인
+        function isRunningStandalone() {
+            return (window.matchMedia('(display-mode: standalone)').matches) || 
+                   (window.navigator.standalone) || 
+                   document.referrer.includes('android-app://');
+        }
+        
         // 모바일에서 주소창 자동 숨김
         window.addEventListener('load', function() {
             // iOS Safari 높이 이슈 해결
@@ -791,11 +954,24 @@
             window.addEventListener('resize', setVH);
             window.addEventListener('orientationchange', setVH);
             
-            // 모바일에서 로드 후 주소창 숨김 시도
-            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            // Standalone 모드가 아닌 모바일에서 배너 표시
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const bannerDismissed = localStorage.getItem('installBannerDismissed');
+            
+            if (isMobile && !isRunningStandalone() && !bannerDismissed && !deferredPrompt) {
+                // beforeinstallprompt가 발생하지 않았을 때 (iOS 등)
                 setTimeout(() => {
-                    window.scrollTo(0, 1);
-                }, 100);
+                    if (installBanner.style.display !== 'flex') {
+                        installBanner.style.display = 'flex';
+                    }
+                }, 2000); // 2초 후 표시
+            }
+            
+            // Standalone 모드 확인 및 로그
+            if (isRunningStandalone()) {
+                console.log('✅ Standalone 모드로 실행 중 (전체화면)');
+            } else {
+                console.log('ℹ️ 브라우저 모드로 실행 중');
             }
         });
         
